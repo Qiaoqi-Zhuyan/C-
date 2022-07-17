@@ -1,0 +1,1276 @@
+## 7、友元
+
+借助友元（friend），可以使得其他类中的成员函数以及全局范围内的函数访问当前类的 private 成员
+
+-  友元的关系是单向的而不是双向的。如果声明了类 B 是类 A 的友元类，不等于类 A 是类 B 的友元类，类 A 中的成员函数不能访问类 B 中的 private 成员。
+-  友元的关系不能传递。如果类 B 是类 A 的友元类，类 C 是类 B 的友元类，不等于类 C 是类 A 的友元类。
+
+### 7.1 友元函数
+
+注意，友元函数不同于类的成员函数，在友元函数中不能直接访问类的成员，必须要借助对象。
+
+```c++
+class Student{
+public:
+    Student(char *name, int age, float score);
+public:
+    friend void show(Student *pstu);  //将show()声明为友元函数
+private:
+    char *m_name;
+    int m_age;
+    float m_score;
+};
+Student::Student(char *name, int age, float score): m_name(name), m_age(age), m_score(score){ }
+//非成员函数
+void show(Student *pstu){
+    cout<<pstu->m_name<<"的年龄是 "<<pstu->m_age<<"，成绩是 "<<pstu->m_score<<endl;
+}
+int main(){
+    Student stu("小明", 15, 90.6);
+    show(&stu);  //调用友元函数
+    Student *pstu = new Student("李磊", 16, 80.5);
+    show(pstu);  //调用友元函数
+    return 0;
+}
+```
+
+须通过参数传递对象（可以直接传递对象，也可以传递对象指针或对象引用），并在访问成员时指明对象。
+
+
+
+这个例子是声明其他类的函数为友元函数，这里使用对类进行声明：
+
+```c++
+class Address;  //提前声明Address类
+//声明Student类
+class Student{
+public:
+    Student(char *name, int age, float score);
+public:
+    void show(Address *addr);
+private:
+    char *m_name;
+    int m_age;
+    float m_score;
+};
+//声明Address类
+class Address{
+private:
+    char *m_province;  //省份
+    char *m_city;  //城市
+    char *m_district;  //区（市区）
+public:
+    Address(char *province, char *city, char *district);
+    //将Student类中的成员函数show()声明为友元函数
+    friend void Student::show(Address *addr);
+};
+//实现Student类
+Student::Student(char *name, int age, float score): m_name(name), m_age(age), m_score(score){ }
+void Student::show(Address *addr){
+    cout<<m_name<<"的年龄是 "<<m_age<<"，成绩是 "<<m_score<<endl;
+    cout<<"家庭住址："<<addr->m_province<<"省"<<addr->m_city<<"市"<<addr->m_district<<"区"<<endl;
+}
+//实现Address类
+Address::Address(char *province, char *city, char *district){
+    m_province = province;
+    m_city = city;
+    m_district = district;
+}
+int main(){
+    Student stu("小明", 16, 95.5f);
+    Address addr("陕西", "西安", "雁塔");
+    stu.show(&addr);
+   
+    Student *pstu = new Student("李磊", 16, 80.5);
+    Address *paddr = new Address("河北", "衡水", "桃城");
+    pstu -> show(paddr);
+    return 0;
+}
+```
+
+### 7.2 友元类
+
+例如将类 B 声明为类 A 的友元类，那么类 B 中的所有成员函数都是类 A 的友元函数，可以访问类 A 的所有成员，包括 public、protected、private 属性的。
+
+```c++
+class Student{
+public:
+    Student(char *name, int age, float score);
+public:
+    void show(Address *addr);
+private:
+    char *m_name;
+    int m_age;
+    float m_score;
+};
+//声明Address类
+class Address{
+public:
+    Address(char *province, char *city, char *district);
+public:
+    //将Student类声明为Address类的友元类
+    friend class Student;
+private:
+    char *m_province;  //省份
+    char *m_city;  //城市
+    char *m_district;  //区（市区）
+};
+//实现Student类
+Student::Student(char *name, int age, float score): m_name(name), m_age(age), m_score(score){ }
+void Student::show(Address *addr){
+    cout<<m_name<<"的年龄是 "<<m_age<<"，成绩是 "<<m_score<<endl;
+    cout<<"家庭住址："<<addr->m_province<<"省"<<addr->m_city<<"市"<<addr->m_district<<"区"<<endl;
+}
+//实现Address类
+Address::Address(char *province, char *city, char *district){
+    m_province = province;
+    m_city = city;
+    m_district = district;
+}
+int main(){
+    Student stu("小明", 16, 95.5f);
+    Address addr("陕西", "西安", "雁塔");
+    stu.show(&addr);
+   
+    Student *pstu = new Student("李磊", 16, 80.5);
+    Address *paddr = new Address("河北", "衡水", "桃城");
+    pstu -> show(paddr);
+    return 0;
+}
+```
+
+这里是声明 `student` 类是 `address` 类的友元
+
+其中 `student` 就可以使用 `address` 中的 ` private` 和 `protected` 
+
+## 8、继承
+
+以下是两种典型的使用继承的场景：
+1) 当你创建的新类与现有的类相似，只是多出若干成员变量或成员函数时，可以使用继承，这样不但会减少代码量，而且新类会拥有基类的所有功能。
+
+2) 当你需要创建多个类，它们拥有很多相似的成员变量或成员函数时，也可以使用继承。可以将这些类的共同成员提取出来，定义为基类，然后从基类继承，既可以节省代码，也方便后续修改成员。
+
+### 8.1 例子：
+
+例子：
+
+```c++
+class People{
+public:
+    void setname(char *name);
+    void setage(int age);
+    char *getname();
+    int getage();
+private:
+    char *m_name;
+    int m_age;
+};
+void People::setname(char *name){ m_name = name; }
+void People::setage(int age){ m_age = age; }
+char* People::getname(){ return m_name; }
+int People::getage(){ return m_age;}
+//派生类 Student
+class Student: public People{
+public:
+    void setscore(float score);
+    float getscore();
+private:
+    float m_score;
+};
+void Student::setscore(float score){ m_score = score; }
+float Student::getscore(){ return m_score; }
+int main(){
+    Student stu;
+    stu.setname("小明");
+    stu.setage(16);
+    stu.setscore(95.5f);
+    cout<<stu.getname()<<"的年龄是 "<<stu.getage()<<"，成绩是 "<<stu.getscore()<<endl;
+    return 0;
+}
+```
+
+这些继承过来的成员，可以通过子类对象访问，就像自己的一样
+
+### 8.2 三种不同的继承方法
+
+1) public继承方式
+
+-  基类中所有 public 成员在派生类中为 public 属性；
+-  基类中所有 protected 成员在派生类中为 protected 属性；
+-  基类中所有 private 成员在派生类中不能使用。
+
+2) protected继承方式
+
+-  基类中的所有 public 成员在派生类中为 protected 属性；
+-  基类中的所有 protected 成员在派生类中为 protected 属性；
+-  基类中的所有 private 成员在派生类中不能使用。
+
+3) private继承方式
+
+-  基类中的所有 public 成员在派生类中均为 private 属性；
+-  基类中的所有 protected 成员在派生类中均为 private 属性；
+-  基类中的所有 private 成员在派生类中不能使用。
+
+无论怎么说，都是无法使用基类的 `private` 的 
+
+但实际上是被继承了的，只是不可见
+
+所以说继承的时候吧想继承的东西放在` protected` 里面。
+
+
+
+也就是说，继承方式中的 public、protected、private 是用来指明基类成员在派生类中的最高访问权限的
+
+2) 不管继承方式如何，基类中的 private 成员在派生类中始终不能使用（不能在派生类的成员函数中访问或调用）。
+
+3) 如果希望基类的成员能够被派生类继承并且毫无障碍地使用，那么这些成员只能声明为 public 或 protected；只有那些不希望在派生类中使用的成员才声明为 private。
+
+4) 如果希望基类的成员既不向外暴露（不能通过对象访问），还能在派生类中使用，那么只能声明为 protected。
+
+### 8.3 改变访问权限
+
+using 只能改变基类中 public 和 protected 成员的访问权限，不能改变 private 成员的访问权限
+
+```c++
+class People {
+public:
+    void show();
+protected:
+    char *m_name;
+    int m_age;
+};
+void People::show() {
+    cout << m_name << "的年龄是" << m_age << endl;
+}
+//派生类Student
+class Student : public People {
+public:
+    void learning();
+public:
+    using People::m_name;  //将protected改为public
+    using People::m_age;  //将protected改为public
+    float m_score;
+private:
+    using People::show;  //将public改为private
+};
+void Student::learning() {
+    cout << "我是" << m_name << "，今年" << m_age << "岁，这次考了" << m_score << "分！" << endl;
+}
+int main() {
+    Student stu;
+    stu.m_name = "小明";
+    stu.m_age = 16;
+    stu.m_score = 99.5f;
+    stu.show();  //compile error
+    stu.learning();
+    return 0;
+}
+```
+
+### 8.4 继承时，名字屏蔽
+
+遮蔽，就是在派生类中使用该成员（包括在定义派生类时使用，也包括通过派生类对象访问该成员）时，实际上使用的是派生类新增的成员，而不是从基类继承来的
+
+```c++
+class People{
+public:
+    void show();
+protected:
+    char *m_name;
+    int m_age;
+};
+void People::show(){
+    cout<<"嗨，大家好，我叫"<<m_name<<"，今年"<<m_age<<"岁"<<endl;
+}
+//派生类Student
+class Student: public People{
+public:
+    Student(char *name, int age, float score);
+public:
+    void show();  //遮蔽基类的show()
+private:
+    float m_score;
+};
+Student::Student(char *name, int age, float score){
+    m_name = name;
+    m_age = age;
+    m_score = score;
+}
+void Student::show(){
+    cout<<m_name<<"的年龄是"<<m_age<<"，成绩是"<<m_score<<endl;
+}
+int main(){
+    Student stu("小明", 16, 90.5);
+    //使用的是派生类新增的成员函数，而不是从基类继承的
+    stu.show();
+    //使用的是从基类继承来的成员函数
+    stu.People::show();
+    return 0;
+}
+```
+
+若要使用的话需要用 `::` 来指定
+
+另外基类成员函数和派生类成员函数不构成重载
+
+所以说这样子写是错误的
+
+```c++
+class Base{
+public:
+    void func();
+    void func(int);
+};
+void Base::func(){ cout<<"Base::func()"<<endl; }
+void Base::func(int a){ cout<<"Base::func(int)"<<endl; }
+//派生类Derived
+class Derived: public Base{
+public:
+    void func(char *);
+    void func(bool);
+};
+void Derived::func(char *str){ cout<<"Derived::func(char *)"<<endl; }
+void Derived::func(bool is){ cout<<"Derived::func(bool)"<<endl; }
+int main(){
+    Derived d;
+    d.func("c.biancheng.net");
+    d.func(true);
+    d.func();  //compile error
+    d.func(10);  //compile error
+    d.Base::func();
+    d.Base::func(100);
+    return 0;
+}
+```
+
+### 8.5 基类和派生类的构造函数
+
+类的构造函数不能被继承
+
+在派生类中的构造函数中调用基类的构造函数
+
+```c++
+class People{
+protected:
+    char *m_name;
+    int m_age;
+public:
+    People(char*, int);
+};
+People::People(char *name, int age): m_name(name), m_age(age){}
+//派生类Student
+class Student: public People{
+private:
+    float m_score;
+public:
+    Student(char *name, int age, float score);
+    void display();
+};
+//People(name, age)就是调用基类的构造函数
+Student::Student(char *name, int age, float score): People(name, age), m_score(score){ }
+void Student::display(){
+    cout<<m_name<<"的年龄是"<<m_age<<"，成绩是"<<m_score<<"。"<<endl;
+}
+int main(){
+    Student stu("小明", 16, 90.5);
+    stu.display();
+    return 0;
+}
+```
+
+这里的people是直接调用了基类的构造函数，所以说是可以直接使用的
+
+```c++
+Student::Student(char *name, int age, float score): People("小明", 16), m_score(score){ }
+
+```
+
+比如这样子
+
+调用顺序是只能直接调用基类的构造函数不能够间接调用基类的
+
+### 8.6 基类和派生类的析构函数
+
+和构造函数类似，析构函数也不能被继承。与构造函数不同的是，在派生类的析构函数中不用显式地调用基类的析构函数，因为每个类只有一个析构函数，编译器知道如何选择，无需程序员干涉。
+
+另外析构函数的执行顺序和构造函数的执行顺序也刚好相反：
+
+-  创建派生类对象时，构造函数的执行顺序和继承顺序相同，即先执行基类构造函数，再执行派生类构造函数。
+-  而销毁派生类对象时，析构函数的执行顺序和继承顺序相反，即先执行派生类析构函数，再执行基类析构函数。
+
+### 8.7 多继承
+
+例子：
+
+~~~~C++
+class BaseA{
+public:
+    BaseA(int a, int b);
+    ~BaseA();
+protected:
+    int m_a;
+    int m_b;
+};
+BaseA::BaseA(int a, int b): m_a(a), m_b(b){
+    cout<<"BaseA constructor"<<endl;
+}
+BaseA::~BaseA(){
+    cout<<"BaseA destructor"<<endl;
+}
+//基类
+class BaseB{
+public:
+    BaseB(int c, int d);
+    ~BaseB();
+protected:
+    int m_c;
+    int m_d;
+};
+BaseB::BaseB(int c, int d): m_c(c), m_d(d){
+    cout<<"BaseB constructor"<<endl;
+}
+BaseB::~BaseB(){
+    cout<<"BaseB destructor"<<endl;
+}
+//派生类
+class Derived: public BaseA, public BaseB{
+public:
+    Derived(int a, int b, int c, int d, int e);
+    ~Derived();
+public:
+    void show();
+private:
+    int m_e;
+};
+Derived::Derived(int a, int b, int c, int d, int e): BaseA(a, b), BaseB(c, d), m_e(e){
+    cout<<"Derived constructor"<<endl;
+}
+Derived::~Derived(){
+    cout<<"Derived destructor"<<endl;
+}
+void Derived::show(){
+    cout<<m_a<<", "<<m_b<<", "<<m_c<<", "<<m_d<<", "<<m_e<<endl;
+}
+int main(){
+    Derived obj(1, 2, 3, 4, 5);
+    obj.show();
+    return 0;
+}
+~~~~
+
+如果出现了重名的情况还是一样，用 `::` 区分开来
+
+~~~~~C++
+class BaseA{
+public:
+    BaseA(int a, int b);
+    ~BaseA();
+public:
+    void show();
+protected:
+    int m_a;
+    int m_b;
+};
+BaseA::BaseA(int a, int b): m_a(a), m_b(b){
+    cout<<"BaseA constructor"<<endl;
+}
+BaseA::~BaseA(){
+    cout<<"BaseA destructor"<<endl;
+}
+void BaseA::show(){
+    cout<<"m_a = "<<m_a<<endl;
+    cout<<"m_b = "<<m_b<<endl;
+}
+//基类
+class BaseB{
+public:
+    BaseB(int c, int d);
+    ~BaseB();
+    void show();
+protected:
+    int m_c;
+    int m_d;
+};
+BaseB::BaseB(int c, int d): m_c(c), m_d(d){
+    cout<<"BaseB constructor"<<endl;
+}
+BaseB::~BaseB(){
+    cout<<"BaseB destructor"<<endl;
+}
+void BaseB::show(){
+    cout<<"m_c = "<<m_c<<endl;
+    cout<<"m_d = "<<m_d<<endl;
+}
+//派生类
+class Derived: public BaseA, public BaseB{
+public:
+    Derived(int a, int b, int c, int d, int e);
+    ~Derived();
+public:
+    void display();
+private:
+    int m_e;
+};
+Derived::Derived(int a, int b, int c, int d, int e): BaseA(a, b), BaseB(c, d), m_e(e){
+    cout<<"Derived constructor"<<endl;
+}
+Derived::~Derived(){
+    cout<<"Derived destructor"<<endl;
+}
+void Derived::display(){
+    BaseA::show();  //调用BaseA类的show()函数
+    BaseB::show();  //调用BaseB类的show()函数
+    cout<<"m_e = "<<m_e<<endl;
+}
+int main(){
+    Derived obj(1, 2, 3, 4, 5);
+    obj.display();
+    return 0;
+}
+~~~~~
+
+### 8.8 多继承二义性
+
+多继承出现二义性时就需要使用 `virtual` 进行虚拟继承
+
+给个例子就差不多了：
+
+~~~~C++
+class A{
+protected:
+    int m_a;
+};
+//直接基类B
+class B: virtual public A{  //虚继承
+protected:
+    int m_b;
+};
+//直接基类C
+class C: virtual public A{  //虚继承
+protected:
+    int m_c;
+};
+//派生类D
+class D: public B, public C{
+public:
+    void seta(int a){ m_a = a; }  //正确
+    void setb(int b){ m_b = b; }  //正确
+    void setc(int c){ m_c = c; }  //正确
+    void setd(int d){ m_d = d; }  //正确
+private:
+    int m_d;
+};
+int main(){
+    D d;
+    return 0;
+}
+~~~~
+
+### 8.9 将派生类赋值给基类
+
+对象的内存只包含了成员变量，所以对象之间的赋值是成员变量的赋值
+
+只能用派生类对象给基类对象赋值，而不能用基类对象给派生类对象赋值
+
+同一基类的不同派生类对象之间也不能赋值
+
+~~~~C++
+class A{
+public:
+    A(int a);
+public:
+    void display();
+public:
+    int m_a;
+};
+A::A(int a): m_a(a){ }
+void A::display(){
+    cout<<"Class A: m_a="<<m_a<<endl;
+}
+//派生类
+class B: public A{
+public:
+    B(int a, int b);
+public:
+    void display();
+public:
+    int m_b;
+};
+B::B(int a, int b): A(a), m_b(b){ }
+void B::display(){
+    cout<<"Class B: m_a="<<m_a<<", m_b="<<m_b<<endl;
+}
+int main(){
+    A a(10);
+    B b(66, 99);
+    //赋值前
+    a.display();
+    b.display();
+    cout<<"--------------"<<endl;
+    //赋值后
+    a = b;
+    a.display();
+    b.display();
+    return 0;
+}
+
+~~~~
+
+其中m_b 是派生类里的，所以说并不会赋值到基类中，因为基类没有，所以说赋值的时候直接把m_a 赋值过去就可以了，m_b 就直接甩了。
+
+## 9、多态
+
+### 9.1 多态的写法
+
+基类指针指向基类对象时就使用基类的成员（包括成员函数和成员变量），指向派生类对象时就使用派生类的成员。换句话说，基类指针可以按照基类的方式来做事，也可以按照派生类的方式来做事，它有多种形态，或者说有多种表现方式，我们将这种现象称为**多态**
+
+例子：
+
+~~~~C++
+class People{
+public:
+    People(char *name, int age);
+    virtual void display();  //声明为虚函数
+protected:
+    char *m_name;
+    int m_age;
+};
+People::People(char *name, int age): m_name(name), m_age(age){}
+void People::display(){
+    cout<<m_name<<"今年"<<m_age<<"岁了，是个无业游民。"<<endl;
+}
+//派生类Teacher
+class Teacher: public People{
+public:
+    Teacher(char *name, int age, int salary);
+    virtual void display();  //声明为虚函数
+private:
+    int m_salary;
+};
+Teacher::Teacher(char *name, int age, int salary): People(name, age), m_salary(salary){}
+void Teacher::display(){
+    cout<<m_name<<"今年"<<m_age<<"岁了，是一名教师，每月有"<<m_salary<<"元的收入。"<<endl;
+}
+int main(){
+    People *p = new People("王志刚", 23);
+    p -> display();
+    p = new Teacher("赵宏佳", 45, 8200);
+    p -> display();
+    return 0;
+}
+~~~~
+
+声明了 display 这个函数为虚函数
+
+~~~~C++
+ virtual void display();  //声明为虚函数
+~~~~
+
+C++提供多态的目的是：可以通过基类指针对所有派生类（包括直接派生和间接派生）的成员变量和成员函数进行“全方位”的访问
+
+虚函数是根据指针的指向来调用的，指针指向哪个类的对象就调用哪个类的虚函数
+
+### 9.2 引用实现多态
+
+~~~~C++
+int main(){
+    People p("王志刚", 23);
+    Teacher t("赵宏佳", 45, 8200);
+   
+    People &rp = p;
+    People &rt = t;
+   
+    rp.display();
+    rt.display();
+    return 0;
+}
+~~~~
+
+### 9.3 多态使用例子
+
+~~~~C++
+class Troops{
+public:
+    virtual void fight(){ cout<<"Strike back!"<<endl; }
+};
+//陆军
+class Army: public Troops{
+public:
+    void fight(){ cout<<"--Army is fighting!"<<endl; }
+};
+//99A主战坦克
+class _99A: public Army{
+public:
+    void fight(){ cout<<"----99A(Tank) is fighting!"<<endl; }
+};
+//武直10武装直升机
+class WZ_10: public Army{
+public:
+    void fight(){ cout<<"----WZ-10(Helicopter) is fighting!"<<endl; }
+};
+//长剑10巡航导弹
+class CJ_10: public Army{
+public:
+    void fight(){ cout<<"----CJ-10(Missile) is fighting!"<<endl; }
+};
+//空军
+class AirForce: public Troops{
+public:
+    void fight(){ cout<<"--AirForce is fighting!"<<endl; }
+};
+//J-20隐形歼击机
+class J_20: public AirForce{
+public:
+    void fight(){ cout<<"----J-20(Fighter Plane) is fighting!"<<endl; }
+};
+//CH5无人机
+class CH_5: public AirForce{
+public:
+    void fight(){ cout<<"----CH-5(UAV) is fighting!"<<endl; }
+};
+//轰6K轰炸机
+class H_6K: public AirForce{
+public:
+    void fight(){ cout<<"----H-6K(Bomber) is fighting!"<<endl; }
+};
+int main(){
+    Troops *p = new Troops;
+    p ->fight();
+    //陆军
+    p = new Army;
+    p ->fight();
+    p = new _99A;
+    p -> fight();
+    p = new WZ_10;
+    p -> fight();
+    p = new CJ_10;
+    p -> fight();
+    //空军
+    p = new AirForce;
+    p -> fight();
+    p = new J_20;
+    p -> fight();
+    p = new CH_5;
+    p -> fight();
+    p = new H_6K;
+    p -> fight();
+    return 0;
+}
+~~~~
+
+### 9.4 使用多态时要注意的问题
+
+1) 只需要在虚函数的声明处加上 virtual 关键字，函数定义处可以加也可以不加。
+
+2) 为了方便，你可以只将基类中的函数声明为虚函数，这样所有派生类中具有遮蔽关系的同名函数都将自动成为虚函数。
+
+3) 当在基类中定义了虚函数时，如果派生类没有定义新的函数来遮蔽此函数，那么将使用基类的虚函数。
+
+4) 只有派生类的虚函数覆盖基类的虚函数（函数原型相同）才能构成多态（通过基类[指针](http://c.biancheng.net/c/80/)访问派生类函数）。例如基类虚函数的原型为`virtual void func();`，派生类虚函数的原型为`virtual void func(int);`，那么当基类指针 p 指向派生类对象时，语句`p -> func(100);`将会出错，而语句`p -> func();`将调用基类的函数。
+
+5) 构造函数不能是虚函数。对于基类的构造函数，它仅仅是在派生类构造函数中被调用，这种机制不同于继承。也就是说，派生类不继承基类的构造函数，将构造函数声明为虚函数没有什么意义。
+
+6) 析构函数可以声明为虚函数
+
+
+
+**多态是指通过基类的指针既可以访问基类的成员，也可以访问派生类的成员**
+
+-  必须存在继承关系；
+-  继承关系中必须有同名的虚函数，并且它们是覆盖关系（函数原型相同）。
+-  存在基类的指针，通过该指针调用虚函数。
+
+首先看成员函数所在的类是否会作为基类。然后看成员函数在类的继承后有无可能被更改功能，如果希望更改其功能的，一般应该将它声明为虚函数。如果成员函数在类被继承后功能不需修改，或派生类用不到该函数，则不要把它声明为虚函数
+
+### 9.5 纯虚函数
+
+
+
+virtual 返回值类型 函数名 (函数参数) = 0;
+
+包含纯虚函数的类称为抽象类，无法实例化
+
+给个例子，顺便就解释了多态的使用：
+
+~~~~C++
+class Line{
+public:
+    Line(float len);
+    virtual float area() = 0;
+    virtual float volume() = 0;
+protected:
+    float m_len;
+};
+Line::Line(float len): m_len(len){ }
+//矩形
+class Rec: public Line{
+public:
+    Rec(float len, float width);
+    float area();
+protected:
+    float m_width;
+};
+Rec::Rec(float len, float width): Line(len), m_width(width){ }
+float Rec::area(){ return m_len * m_width; }
+//长方体
+class Cuboid: public Rec{
+public:
+    Cuboid(float len, float width, float height);
+    float area();
+    float volume();
+protected:
+    float m_height;
+};
+Cuboid::Cuboid(float len, float width, float height): Rec(len, width), m_height(height){ }
+float Cuboid::area(){ return 2 * ( m_len*m_width + m_len*m_height + m_width*m_height); }
+float Cuboid::volume(){ return m_len * m_width * m_height; }
+//正方体
+class Cube: public Cuboid{
+public:
+    Cube(float len);
+    float area();
+    float volume();
+};
+Cube::Cube(float len): Cuboid(len, len, len){ }
+float Cube::area(){ return 6 * m_len * m_len; }
+float Cube::volume(){ return m_len * m_len * m_len; }
+int main(){
+    Line *p = new Cuboid(10, 20, 30);
+    cout<<"The area of Cuboid is "<<p->area()<<endl;
+    cout<<"The volume of Cuboid is "<<p->volume()<<endl;
+  
+    p = new Cube(15);
+    cout<<"The area of Cube is "<<p->area()<<endl;
+    cout<<"The volume of Cube is "<<p->volume()<<endl;
+    return 0;
+}
+~~~~
+
+因为Line类中将 `area（）`  和  `volume（）` 定义成虚函数了，所以说我们实现了多态
+
+ ## 10、模板
+
+### 10.1 模板函数
+
+就可以将类型参数用于函数定义和函数声明了
+
+在函数定义时可以不指明具体的数据类型，当发生函数调用时，编译器可以根据传入的实参自动推断数据类型
+
+给个例子：
+
+~~~~C++
+template<typename T> T max(T a, T b, T c);
+int main( ){
+    //求三个整数的最大值
+    int i1, i2, i3, i_max;
+    cin >> i1 >> i2 >> i3;
+    i_max = max(i1,i2,i3);
+    cout << "i_max=" << i_max << endl;
+    //求三个浮点数的最大值
+    double d1, d2, d3, d_max;
+    cin >> d1 >> d2 >> d3;
+    d_max = max(d1,d2,d3);
+    cout << "d_max=" << d_max << endl;
+    //求三个长整型数的最大值
+    long g1, g2, g3, g_max;
+    cin >> g1 >> g2 >> g3;
+    g_max = max(g1,g2,g3);
+    cout << "g_max=" << g_max << endl;
+    return 0;
+}
+//定义函数模板
+template<typename T>  //模板头，这里不能有分号
+T max(T a, T b, T c){ //函数头
+    T max_num = a;
+    if(b > max_num) max_num = b;
+    if(c > max_num) max_num = c;
+    return max_num;
+}
+~~~~
+
+### 10.2 模板类
+
+模板头加上类的声明，对每个成员函数定义时，都有加上模板头。
+
+例子：
+
+~~~~C++
+template<typename T1, typename T2>  //这里不能有分号
+class Point{
+public:
+    Point(T1 x, T2 y): m_x(x), m_y(y){ }
+public:
+    T1 getX() const;  //获取x坐标
+    void setX(T1 x);  //设置x坐标
+    T2 getY() const;  //获取y坐标
+    void setY(T2 y);  //设置y坐标
+private:
+    T1 m_x;  //x坐标
+    T2 m_y;  //y坐标
+};
+emplate<typename T1, typename T2>  //模板头
+T1 Point<T1, T2>::getX() const /*函数头*/ {
+    return m_x;
+}
+template<typename T1, typename T2>
+void Point<T1, T2>::setX(T1 x){
+    m_x = x;
+}
+template<typename T1, typename T2>
+T2 Point<T1, T2>::getY() const{
+    return m_y;
+}
+template<typename T1, typename T2>
+void Point<T1, T2>::setY(T2 y){
+    m_y = y;
+}
+~~~~
+
+类名 Point 后面也要带上类型参数
+
+template 后面的类型参数要和类声明时的一致。
+
+**使用模板函数创建对象**
+
+~~~~C++
+Point<int, int> p1(10, 20);
+Point<int, float> p2(10, 15.5);
+Point<float, char*> p3(12.4, "东经180度");
+~~~~
+
+或者使用指针
+
+~~~~C++
+Point<float, float> *p1 = new Point<float, float>(10.6, 109.3);
+Point<char*, char*> *p = new Point<char*, char*>("东经180度", "北纬210度");
+~~~~
+
+例子：
+
+~~~~C++
+template<class T1, class T2>  //这里不能有分号
+class Point{
+public:
+    Point(T1 x, T2 y): m_x(x), m_y(y){ }
+public:
+    T1 getX() const;  //获取x坐标
+    void setX(T1 x);  //设置x坐标
+    T2 getY() const;  //获取y坐标
+    void setY(T2 y);  //设置y坐标
+private:
+    T1 m_x;  //x坐标
+    T2 m_y;  //y坐标
+};
+template<class T1, class T2>  //模板头
+T1 Point<T1, T2>::getX() const /*函数头*/ {
+    return m_x;
+}
+template<class T1, class T2>
+void Point<T1, T2>::setX(T1 x){
+    m_x = x;
+}
+template<class T1, class T2>
+T2 Point<T1, T2>::getY() const{
+    return m_y;
+}
+template<class T1, class T2>
+void Point<T1, T2>::setY(T2 y){
+    m_y = y;
+}
+int main(){
+    Point<int, int> p1(10, 20);
+    cout<<"x="<<p1.getX()<<", y="<<p1.getY()<<endl;
+    Point<int, char*> p2(10, "东经180度");
+    cout<<"x="<<p2.getX()<<", y="<<p2.getY()<<endl;
+    Point<char*, char*> *p3 = new Point<char*, char*>("东经180度", "北纬210度");
+    cout<<"x="<<p3->getX()<<", y="<<p3->getY()<<endl;
+    return 0;
+}
+~~~~
+
+### 10.3 我也不知道会不会考这么细致...
+
+## 11、异常
+
+### 11.1 异常处理
+
+~~~~~c++
+try{
+  //可能出错的语句
+}catch(exceptionType variable){
+  //处理异常语句
+}
+~~~~~
+
+检测到异常后程序的执行流会发生跳转，从异常点跳转到 catch 所在的位置，之后的语句不会被执行，执行完catch中的语句后，又会继续执行之后的语句
+
+~~~~C++
+#include <iostream>
+#include <string>
+#include <exception>
+using namespace std;
+int main(){
+    string str = "http://c.biancheng.net";
+  
+    try{
+        char ch1 = str[100];
+        cout<<ch1<<endl;
+    }catch(exception e){
+        cout<<"[1]out of bound!"<<endl;
+    }
+    try{
+        char ch2 = str.at(100);
+        cout<<ch2<<endl;
+    }catch(exception &e){  //exception类位于<exception>头文件中
+        cout<<"[2]out of bound!"<<endl;
+    }
+    return 0;
+}
+~~~~
+
+其中<exception>类中包含所有的标准错误
+
+~~~~C++
+try{
+    //可能抛出异常的语句
+}catch(exception &e){
+    //处理异常的语句
+}
+~~~~
+
+↑这段代码可以捕获所有的标准库中的错误类型
+
+### 11.2 异常类型和多级catch匹配
+
+~~~~C++
+try{
+  //可能出错的语句
+}catch(exceptionType variable){
+  //处理异常语句
+}
+~~~~
+
+
+
+`exceptionType`是异常类型，它指明了当前的 catch 可以处理什么类型的异常；`variable`是一个变量，用来接收异常信息。当程序抛出异常时，会创建一份数据，这份数据包含了错误信息，程序员可以根据这些信息来判断到底出了什么问题，接下来怎么处理。
+
+
+
+当异常发生后，会将异常数据传递给 variable 这个变量，variable 要和 exceptionType 的数据类型匹配才行。
+
+~~~~C++
+try{
+    //可能抛出异常的语句
+}catch (exception_type_1 e){
+    //处理异常的语句
+}catch (exception_type_2 e){
+    //处理异常的语句
+}
+//其他的catch
+catch (exception_type_n e){
+    //处理异常的语句
+}
+~~~~
+
+catch 在匹配过程中会发生类型转换
+
+~~~~C++
+#include <iostream>
+#include <string>
+using namespace std;
+class Base{ };
+class Derived: public Base{ };
+int main(){
+    try{
+        throw Derived();  //抛出自己的异常类型，实际上是创建一个Derived类型的匿名对象
+        cout<<"This statement will not be executed."<<endl;
+    }catch(int){
+        cout<<"Exception type: int"<<endl;
+    }catch(char *){
+        cout<<"Exception type: cahr *"<<endl;
+    }catch(Base){  //匹配成功（向上转型）
+        cout<<"Exception type: Base"<<endl;
+    }catch(Derived){
+        cout<<"Exception type: Derived"<<endl;
+    }
+    return 0;
+}
+~~~~
+
+发生了向上兼容
+
+### 11.3 抛出异常 
+
+异常必须显式地抛出，才能被检测和捕获到；如果没有显式的抛出，即使有异常也检测不到。
+
+使用方法为：
+
+~~~~C++
+throw exceptionData;
+~~~~
+
+看这个例子就知道throw怎么玩了
+
+~~~~C++
+#include <iostream>
+#include <cstdlib>
+using namespace std;
+//自定义的异常类型
+class OutOfRange{
+public:
+    OutOfRange(): m_flag(1){ };
+    OutOfRange(int len, int index): m_len(len), m_index(index), m_flag(2){ }
+public:
+    void what() const;  //获取具体的错误信息
+private:
+    int m_flag;  //不同的flag表示不同的错误
+    int m_len;  //当前数组的长度
+    int m_index;  //当前使用的数组下标
+};
+void OutOfRange::what() const {
+    if(m_flag == 1){
+        cout<<"Error: empty array, no elements to pop."<<endl;
+    }else if(m_flag == 2){
+        cout<<"Error: out of range( array length "<<m_len<<", access index "<<m_index<<" )"<<endl;
+    }else{
+        cout<<"Unknown exception."<<endl;
+    }
+}
+//实现动态数组
+class Array{
+public:
+    Array();
+    ~Array(){ free(m_p); };
+public:
+    int operator[](int i) const;  //获取数组元素
+    int push(int ele);  //在末尾插入数组元素
+    int pop();  //在末尾删除数组元素
+    int length() const{ return m_len; };  //获取数组长度
+private:
+    int m_len;  //数组长度
+    int m_capacity;  //当前的内存能容纳多少个元素
+    int *m_p;  //内存指针
+private:
+    static const int m_stepSize = 50;  //每次扩容的步长
+};
+Array::Array(){
+    m_p = (int*)malloc( sizeof(int) * m_stepSize );
+    m_capacity = m_stepSize;
+    m_len = 0;
+}
+int Array::operator[](int index) const {
+    if( index<0 || index>=m_len ){  //判断是否越界
+        throw OutOfRange(m_len, index);  //抛出异常（创建一个匿名对象）
+    }
+    return *(m_p + index);
+}
+int Array::push(int ele){
+    if(m_len >= m_capacity){  //如果容量不足就扩容
+        m_capacity += m_stepSize;
+        m_p = (int*)realloc( m_p, sizeof(int) * m_capacity );  //扩容
+    }
+    *(m_p + m_len) = ele;
+    m_len++;
+    return m_len-1;
+}
+int Array::pop(){
+    if(m_len == 0){
+         throw OutOfRange();  //抛出异常（创建一个匿名对象）
+    }
+    m_len--;
+    return *(m_p + m_len);
+}
+//打印数组元素
+void printArray(Array &arr){
+    int len = arr.length();
+    //判断数组是否为空
+    if(len == 0){
+        cout<<"Empty array! No elements to print."<<endl;
+        return;
+    }
+    for(int i=0; i<len; i++){
+        if(i == len-1){
+            cout<<arr[i]<<endl;
+        }else{
+            cout<<arr[i]<<", ";
+        }
+    }
+}
+int main(){
+    Array nums;
+    //向数组中添加十个元素
+    for(int i=0; i<10; i++){
+        nums.push(i);
+    }
+    printArray(nums);
+    //尝试访问第20个元素
+    try{
+        cout<<nums[20]<<endl;
+    }catch(OutOfRange &e){
+        e.what();
+    }
+    //尝试弹出20个元素
+    try{
+        for(int i=0; i<20; i++){
+            nums.pop();
+        }
+    }catch(OutOfRange &e){
+        e.what();
+    }
+    printArray(nums);
+    return 0;
+}
+~~~~
+
+## 12、文件
+
+### 12.1 使用fstream
+
+文件操作得使用
+
+~~~~~c++
+#include<istream>
+~~~~~
+
+
+
+### 12.2 打开文件
+
+使用open
+
+~~~~~c++
+void open(const char* szFileName, int mode)
+~~~~~
+
+| ios::in                           | ifstreamfstream         | 打开文件用于读取数据。如果文件不存在，则打开出错。                |
+| --------------------------------- | ----------------------- | ---------------------------------------- |
+| ios::out                          | ofstreamfstream         | 打开文件用于写入数据。如果文件不存在，则新建该文件；如果文件原来就存在，则打开时清除原来的内容。 |
+| ios::app                          | ofstreamfstream         | 打开文件，用于在其尾部添加数据。如果文件不存在，则新建该文件。          |
+| ios::ate                          | ifstream                | 打开一个已有的文件，并将文件读指针指向文件末尾（读写指 的概念后面解释）。如果文件不存在，则打开出错。 |
+| ios:: trunc                       | ofstream                | 打开文件时会清空内部存储的所有数据，单独使用时与 ios::out 相同。    |
+| ios::binary                       | ifstreamofstreamfstream | 以二进制方式打开文件。若不指定此模式，则以文本模式打开。             |
+| ios::in \| ios::out               | fstream                 | 打开已存在的文件，既可读取其内容，也可向其写入数据。文件刚打开时，原有内容保持不变。如果文件不存在，则打开出错。 |
+| ios::in \| ios::out               | ofstream                | 打开已存在的文件，可以向其写入数据。文件刚打开时，原有内容保持不变。如果文件不存在，则打开出错。 |
+| ios::in \| ios::out \| ios::trunc | fstream                 | 打开文件，既可读取其内容，也可向其写入数据。如果文件本来就存在，则打开时清除原来的内容；如果文件不存在，则新建该文件。 |
+
+### 	12.3 关闭文件
+
+~~~~C++
+void open(const char* szFileName, int mode)
+~~~~
+
+~~~~C++
+#include <fstream>
+using namespace std;
+int main()
+{
+    const char *url="http://c.biancheng.net/cplus/";
+    ofstream outFile("url.txt", ios::out);
+    //向 url.txt 文件中写入字符串
+    outFile.write(url, 30);
+    //关闭已打开的文件
+    outFile.close();
+    return 0;
+}
+~~~~
+
